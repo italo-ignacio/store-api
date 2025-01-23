@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Plan {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(50)
+  description String? @db.Text()
+
+  planPrice         PlanPrice[]
+  monthlyPrice      Float       @default(29.99)
+  priceOfRestaurant Float       @default(69.99)
+  priceOfMenuItem   Float       @default(0.99)
+  restaurantLimit   Int
+  menuItemLimit     Int
+
+  subscription Subscription[]
+
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+  finishedAt DateTime? @db.Timestamptz()
+
+  @@map("plan")
+}
+
+model PlanPrice {
+  id Int @id @default(autoincrement())
+
+  plan   Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId Int  @db.Integer
+
+  period DiscountPeriod
+  price  Float
+
+  @@map("plan_price")
+}
+
+enum DiscountPeriod {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
+model Subscription {
+  id Int @id @default(autoincrement())
+
+  company Company?
+  plan    Plan     @relation(fields: [planId], references: [id])
+
+  planId Int
+
+  price           Decimal
+  restaurantLimit Int
+  menuItemLimit   Int
+
+  expiresAt DateTime @db.Timestamptz()
+
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+  finishedAt DateTime? @db.Timestamptz()
+
+  @@map("subscription")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String
+  name     String? @db.VarChar(100)
+  phone    String? @db.VarChar(15)
+  password String
+
+  role   Role @relation(fields: [roleId], references: [id])
+  roleId Int
+
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+
+  @@map("user")
+}
+
+model Role {
+  id Int @id @default(autoincrement())
+
+  roleType       RoleType
+  roleRestaurant RoleRestaurant[]
+
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId Int
+
+  user User[]
+
+  @@map("role")
+}
+
+enum RoleType {
+  ADMIN
+  COMPANY_EDIT
+  COMPANY_VIEW
+  EMPLOYEE_EDIT
+  EMPLOYEE_VIEW
+}
+
+model RoleRestaurant {
+  id Int @id @default(autoincrement())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  role       Role       @relation(fields: [roleId], references: [id])
+
+  restaurantId Int
+  roleId       Int
+
+  @@map("role_restaurant")
+}
+
+model Restaurant {
+  id      Int     @id @default(autoincrement())
+  name    String? @db.VarChar(255)
+  address String? @db.VarChar(255)
+  phone   String? @db.VarChar(255)
+
+  roleRestaurant RoleRestaurant[]
+
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+
+  @@map("restaurant")
+}
+
+model Company {
+  id       Int    @id @default(autoincrement())
+  name     String @db.VarChar(255)
+  address  String @db.VarChar(255)
+  phone    String @db.VarChar(255)
+  logo_url String @db.VarChar(255)
+
+  plan_id  String @db.VarChar(255)
+  owner_id String @db.VarChar(255)
+
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+
+  role Role[]
+
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId Int          @unique
+
+  @@map("company")
+}
+
+model Category {
+  id Int @id @default(autoincrement())
+
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+
+  @@map("category")
+}
+
+model MenuItem {
+  id Int @id @default(autoincrement())
+
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+
+  @@map("menu_item")
+}
+
+model MenuItemHistory {
+  id Int @id @default(autoincrement())
+
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+
+  @@map("menu_item_history")
+}
+
+model Table {
+  id Int @id @default(autoincrement())
+
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+
+  @@map("table")
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+
+  @@map("order")
+}
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+
+  finishedAt DateTime? @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @db.Timestamptz()
+
+  @@map("order_item")
+}
