@@ -10,19 +10,19 @@ datasource db {
 // onDelete: Cascade, onUpdate: Cascade
 
 model Plan {
-  id          String  @id @default(uuid())
+  id          Int     @id @default(autoincrement())
   name        String  @db.VarChar(50)
   description String? @db.Text()
 
-  planPrice    PlanPrice[]
-  subscription Subscription[]
+  planPriceList    PlanPrice[]
+  subscriptionList Subscription[]
 
   minimumOfRestaurant Int     @map("minimum_of_restaurant")
-  minimumOfMenuItem   Int     @map("minimum_of_menu_item")
-  monthlyPrice        Float   @default(29.99) @map("monthly_price")
-  priceOfRestaurant   Float   @default(69.99) @map("price_of_restaurant")
-  priceOfMenuItem     Float   @default(0.99) @map("price_of_menu_item")
-  freePlan            Boolean @default(false)
+  minimumOfProduct    Int     @map("minimum_of_product")
+  monthlyPrice        Float   @map("monthly_price") // @default(29.99)
+  priceOfRestaurant   Float   @map("price_of_restaurant") //@default(69.99)
+  priceOfProduct      Float   @map("price_of_product") // @default(0.99) 
+  freePlan            Boolean @default(false) @map("free_plan")
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -32,10 +32,10 @@ model Plan {
 }
 
 model PlanPrice {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
 
-  plan   Plan   @relation(fields: [planId], references: [id])
-  planId String @map("plan_id")
+  plan   Plan @relation(fields: [planId], references: [id])
+  planId Int  @map("plan_id")
 
   period   PlanPricePeriod
   discount Float
@@ -51,16 +51,16 @@ enum PlanPricePeriod {
 }
 
 model Subscription {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
 
   company Company?
 
-  plan   Plan   @relation(fields: [planId], references: [id])
-  planId String @map("plan_id")
+  plan   Plan @relation(fields: [planId], references: [id])
+  planId Int  @map("plan_id")
 
   price           Decimal
   restaurantLimit Int     @map("restaurant_limit")
-  menuItemLimit   Int     @map("menu_item_limit")
+  productLimit    Int     @map("product_limit")
 
   expiresAt    DateTime @map("expires_at") @db.Timestamptz()
   contactAdmin Boolean  @default(false) @map("contact_admin")
@@ -73,14 +73,14 @@ model Subscription {
 }
 
 model User {
-  id       String  @id @default(uuid())
+  id       Int     @id @default(autoincrement())
   email    String  @db.VarChar(150)
   name     String? @db.VarChar(100)
   phone    String? @db.VarChar(15)
   password String
 
-  role   Role   @relation(fields: [roleId], references: [id])
-  roleId String @unique @map("role_id")
+  role   Role @relation(fields: [roleId], references: [id])
+  roleId Int  @unique @map("role_id")
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -90,15 +90,15 @@ model User {
 }
 
 model Role {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
 
-  roleType       RoleType         @map("role_type")
-  roleRestaurant RoleRestaurant[]
+  roleType           RoleType         @map("role_type")
+  roleRestaurantList RoleRestaurant[]
 
   user User?
 
   company   Company @relation(fields: [companyId], references: [id])
-  companyId String  @map("company_id")
+  companyId Int     @map("company_id")
 
   @@map("role")
 }
@@ -112,28 +112,35 @@ enum RoleType {
 }
 
 model RoleRestaurant {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id])
   role       Role       @relation(fields: [roleId], references: [id])
 
-  restaurantId String @map("restaurant_id")
-  roleId       String @map("role_id")
+  restaurantId Int @map("restaurant_id")
+  roleId       Int @map("role_id")
 
   @@map("role_restaurant")
 }
 
 model Restaurant {
-  id            String  @id @default(uuid())
-  name          String  @db.VarChar(255)
-  address       String  @db.VarChar(255)
-  phone         String? @db.VarChar(255)
-  logoUrl       String? @db.Text()
-  openingHour   String  @db.Text()
-  paymentMethod String  @db.Text()
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(150)
+  address     String  @db.VarChar(255)
+  phone       String  @db.VarChar(25)
+  description String? @db.Text()
+  logoUrl     String? @map("logo_url") @db.Text()
 
-  roleRestaurant RoleRestaurant[]
-  style          Style[]
+  roleRestaurantList RoleRestaurant[]
+  styleList          Style[]
+  paymentMethodList  PaymentMethod[]
+  openingHourList    OpeningHour[]
+  productList        Product[]
+  comboList          Combo[]
+  tableList          Table[]
+
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId Int     @map("company_id")
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -142,19 +149,54 @@ model Restaurant {
   @@map("restaurant")
 }
 
+model OpeningHour {
+  id Int @id @default(autoincrement())
+
+  dayOfWeek   DayOfWeek @map("day_of_week")
+  openingTime DateTime  @map("opening_time") @db.Timetz()
+  closingTime DateTime  @map("closing_time") @db.Timetz()
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId Int        @map("restaurant_id")
+
+  @@map("Opening_hour")
+}
+
+enum DayOfWeek {
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
+  Sunday
+}
+
+model PaymentMethod {
+  id          Int     @id @default(autoincrement())
+  title       String  @db.VarChar(100)
+  description String  @db.Text()
+  logoUrl     String? @map("logo_url") @db.Text()
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId Int        @map("restaurant_id")
+
+  @@map("payment_method")
+}
+
 model Style {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
 
   active Boolean @default(false)
   color  Color   @relation(fields: [colorId], references: [id])
 
-  colorId String @map("color_id")
+  colorId Int @map("color_id")
 
   company    Company    @relation(fields: [companyId], references: [id])
   restaurant Restaurant @relation(fields: [restaurantId], references: [id])
 
-  companyId    String @map("company_id")
-  restaurantId String @map("restaurant_id")
+  companyId    Int @map("company_id")
+  restaurantId Int @map("restaurant_id")
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -164,7 +206,7 @@ model Style {
 }
 
 model Color {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
 
   primary       String @db.VarChar(7)
   textPrimary   String @map("text_primary") @db.VarChar(7)
@@ -173,36 +215,36 @@ model Color {
   background    String @db.VarChar(7)
   text          String @db.VarChar(7)
 
-  style Style[]
+  styleList Style[]
 
   @@map("color")
 }
 
 model Company {
-  id      String @id @default(uuid())
-  name    String @db.VarChar(255)
-  address String @db.VarChar(255)
-  phone   String @db.VarChar(255)
-  logoUrl String @db.Text()
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(255)
+  description String? @db.Text()
 
-  plan_id  String @db.VarChar(255)
-  owner_id String @db.VarChar(255)
+  restaurantList Restaurant[]
+  roleList       Role[]
+  styleList      Style[]
+
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId Int          @unique @map("subscription_id")
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   finishedAt DateTime? @map("finished_at") @db.Timestamptz()
 
-  role  Role[]
-  style Style[]
-
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
-  subscriptionId String       @unique
-
   @@map("company")
 }
 
 model Category {
-  id String @id @default(uuid())
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(100)
+  description String? @db.Text()
+
+  productList Product[]
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -211,28 +253,100 @@ model Category {
   @@map("category")
 }
 
-model MenuItem {
-  id String @id @default(uuid())
+model Product {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(150)
+  description  String?   @db.Text()
+  price        Decimal
+  startSellAt  DateTime  @map("start_sell_at") @db.Timestamptz()
+  finishSellAt DateTime? @map("finish_sell_at") @db.Timestamptz()
+
+  discount         Float?
+  startDiscountAt  DateTime? @map("start_discount_at") @db.Timestamptz()
+  finishDiscountAt DateTime? @map("finish_discount_at") @db.Timestamptz()
+
+  productImageList ProductImage[]
+  comboProductList ComboProduct[]
+  orderProductList OrderProduct[]
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int      @map("category_id")
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId Int        @map("restaurant_id")
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   finishedAt DateTime? @map("finished_at") @db.Timestamptz()
 
-  @@map("menu_item")
+  @@map("product")
 }
 
-model MenuItemHistory {
-  id String @id @default(uuid())
+model ProductImage {
+  id  Int    @id @default(autoincrement())
+  url String
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int     @map("product_id")
+
+  @@map("product_image")
+}
+
+model Combo {
+  id             Int          @id @default(autoincrement())
+  name           String       @db.VarChar(150)
+  description    String?      @db.Text()
+  startSellAt    DateTime     @map("start_sell_at") @db.Timestamptz()
+  finishSellAt   DateTime?    @map("finish_sell_at") @db.Timestamptz()
+  comboImageList ComboImage[]
+
+  discount         Float?
+  startDiscountAt  DateTime? @map("start_discount_at") @db.Timestamptz()
+  finishDiscountAt DateTime? @map("finish_discount_at") @db.Timestamptz()
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId Int        @map("restaurant_id")
+
+  comboProductList ComboProduct[]
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   finishedAt DateTime? @map("finished_at") @db.Timestamptz()
 
-  @@map("menu_item_history")
+  @@map("combo")
+}
+
+model ComboImage {
+  id  Int    @id @default(autoincrement())
+  url String
+
+  combo   Combo @relation(fields: [comboId], references: [id])
+  comboId Int   @map("combo_id")
+
+  @@map("combo_image")
+}
+
+model ComboProduct {
+  id Int @id @default(autoincrement())
+
+  combo   Combo   @relation(fields: [comboId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  comboId   Int @map("combo_id")
+  productId Int @map("product_id")
+
+  quantity Int
+
+  @@map("combo_product")
 }
 
 model Table {
-  id String @id @default(uuid())
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(50)
+  description String? @db.Text()
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId Int        @map("restaurant_id")
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -241,8 +355,20 @@ model Table {
   @@map("table")
 }
 
+model ProductHistory {
+  id Int @id @default(autoincrement())
+
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz()
+
+  @@map("product_history")
+}
+
 model Order {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
+
+  orderProductList OrderProduct[]
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -251,12 +377,14 @@ model Order {
   @@map("order")
 }
 
-model OrderItem {
-  id String @id @default(uuid())
+model OrderProduct {
+  id Int @id @default(autoincrement())
 
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-  finishedAt DateTime? @map("finished_at") @db.Timestamptz()
+  order   Order   @relation(fields: [orderId], references: [id])
+  Product Product @relation(fields: [productId], references: [id])
 
-  @@map("order_item")
+  orderId   Int @map("order_id")
+  productId Int @map("product_id")
+
+  @@map("order_product")
 }
