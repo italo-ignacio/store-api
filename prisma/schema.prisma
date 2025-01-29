@@ -72,6 +72,22 @@ model Subscription {
   @@map("subscription")
 }
 
+model Client {
+  id       Int     @id @default(autoincrement())
+  email    String  @db.VarChar(150)
+  name     String? @db.VarChar(100)
+  phone    String? @db.VarChar(15)
+  password String
+
+  orderList Order[]
+
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz()
+
+  @@map("client")
+}
+
 model User {
   id       Int     @id @default(autoincrement())
   email    String  @db.VarChar(150)
@@ -136,7 +152,6 @@ model Restaurant {
   paymentMethodList  PaymentMethod[]
   openingHourList    OpeningHour[]
   productList        Product[]
-  comboList          Combo[]
   tableList          Table[]
 
   company   Company @relation(fields: [companyId], references: [id])
@@ -244,7 +259,7 @@ model Category {
   name        String  @db.VarChar(100)
   description String? @db.Text()
 
-  productList Product[]
+  productCategoryList ProductCategory[]
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -253,33 +268,16 @@ model Category {
   @@map("category")
 }
 
-model Product {
-  id           Int       @id @default(autoincrement())
-  name         String    @db.VarChar(150)
-  description  String?   @db.Text()
-  price        Decimal
-  startSellAt  DateTime  @map("start_sell_at") @db.Timestamptz()
-  finishSellAt DateTime? @map("finish_sell_at") @db.Timestamptz()
+model ProductCategory {
+  id Int @id @default(autoincrement())
 
-  discount         Float?
-  startDiscountAt  DateTime? @map("start_discount_at") @db.Timestamptz()
-  finishDiscountAt DateTime? @map("finish_discount_at") @db.Timestamptz()
+  category Category @relation(fields: [categoryId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
 
-  productImageList ProductImage[]
-  comboProductList ComboProduct[]
-  orderProductList OrderProduct[]
+  categoryId Int
+  productId  Int
 
-  category   Category @relation(fields: [categoryId], references: [id])
-  categoryId Int      @map("category_id")
-
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
-  restaurantId Int        @map("restaurant_id")
-
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-  finishedAt DateTime? @map("finished_at") @db.Timestamptz()
-
-  @@map("product")
+  @@map("product_category")
 }
 
 model ProductImage {
@@ -292,52 +290,65 @@ model ProductImage {
   @@map("product_image")
 }
 
-model Combo {
-  id             Int          @id @default(autoincrement())
-  name           String       @db.VarChar(150)
-  description    String?      @db.Text()
-  startSellAt    DateTime     @map("start_sell_at") @db.Timestamptz()
-  finishSellAt   DateTime?    @map("finish_sell_at") @db.Timestamptz()
-  comboImageList ComboImage[]
+model Product {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(150)
+  description String? @db.Text()
+  price       Decimal
+
+  startSellAt  DateTime  @map("start_sell_at") @db.Timestamptz()
+  finishSellAt DateTime? @map("finish_sell_at") @db.Timestamptz()
 
   discount         Float?
   startDiscountAt  DateTime? @map("start_discount_at") @db.Timestamptz()
   finishDiscountAt DateTime? @map("finish_discount_at") @db.Timestamptz()
 
+  productOptionGroupList ProductOptionGroup[]
+  productImageList       ProductImage[]
+  orderProductList       OrderProduct[]
+  productCategoryList    ProductCategory[]
+  productOptionItemList  ProductOptionItem[]
+
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
   restaurantId Int        @map("restaurant_id")
-
-  comboProductList ComboProduct[]
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   finishedAt DateTime? @map("finished_at") @db.Timestamptz()
 
-  @@map("combo")
+  @@map("product")
 }
 
-model ComboImage {
-  id  Int    @id @default(autoincrement())
-  url String
-
-  combo   Combo @relation(fields: [comboId], references: [id])
-  comboId Int   @map("combo_id")
-
-  @@map("combo_image")
-}
-
-model ComboProduct {
+model ProductOptionGroup {
   id Int @id @default(autoincrement())
 
-  combo   Combo   @relation(fields: [comboId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  name         String  @db.VarChar(150)
+  description  String? @db.Text()
+  minSelection Int     @default(1)
+  maxSelection Int     @default(1)
+  isRequired   Boolean
 
-  comboId   Int @map("combo_id")
-  productId Int @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int     @map("product_id")
 
-  quantity Int
+  productOptionItemList ProductOptionItem[]
 
-  @@map("combo_product")
+  @@map("product_option_group")
+}
+
+model ProductOptionItem {
+  id           Int      @id @default(autoincrement())
+  name         String?  @db.VarChar(150)
+  defaultPrice Decimal?
+  maxQuantity  Int      @default(1)
+
+  product            Product            @relation(fields: [productId], references: [id])
+  productOptionGroup ProductOptionGroup @relation(fields: [productOptionGroupId], references: [id])
+
+  productId            Int @map("product_id")
+  productOptionGroupId Int @map("product_option_group_id")
+
+  @@map("product_option_item")
 }
 
 model Table {
@@ -348,6 +359,8 @@ model Table {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
   restaurantId Int        @map("restaurant_id")
 
+  orderList Order[]
+
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   finishedAt DateTime? @map("finished_at") @db.Timestamptz()
@@ -355,20 +368,19 @@ model Table {
   @@map("table")
 }
 
-model ProductHistory {
-  id Int @id @default(autoincrement())
-
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-  finishedAt DateTime? @map("finished_at") @db.Timestamptz()
-
-  @@map("product_history")
-}
-
 model Order {
   id Int @id @default(autoincrement())
 
+  price       Decimal
+  observation String? @db.Text()
+
   orderProductList OrderProduct[]
+
+  table  Table?  @relation(fields: [tableId], references: [id])
+  client Client? @relation(fields: [clientId], references: [id])
+
+  clientId Int? @map("client_id")
+  tableId  Int? @map("table_id")
 
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -381,10 +393,13 @@ model OrderProduct {
   id Int @id @default(autoincrement())
 
   order   Order   @relation(fields: [orderId], references: [id])
-  Product Product @relation(fields: [productId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   orderId   Int @map("order_id")
   productId Int @map("product_id")
+
+  quantity Int
+  price    Decimal
 
   @@map("order_product")
 }
