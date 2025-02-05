@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// onDelete: Cascade
-
 model Currency {
   id     Int    @id @default(autoincrement())
   code   String @unique @db.VarChar(3) // Ex: USD, BRL, EUR
@@ -393,7 +391,16 @@ model ProductImage {
 }
 
 model ProductRestaurant {
-  id Int @id @default(autoincrement())
+  id    Int     @id @default(autoincrement())
+  price Decimal @db.Decimal(10, 2)
+
+  outOfStock   Boolean   @default(false) @map("out_of_stock")
+  startSellAt  DateTime  @map("start_sell_at") @db.Timestamptz()
+  finishSellAt DateTime? @map("finish_sell_at") @db.Timestamptz()
+
+  discount         Decimal   @db.Decimal(10, 2)
+  startDiscountAt  DateTime? @map("start_discount_at") @db.Timestamptz()
+  finishDiscountAt DateTime? @map("finish_discount_at") @db.Timestamptz()
 
   product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -408,21 +415,13 @@ model Product {
   id          Int     @id @default(autoincrement())
   name        String  @db.VarChar(150)
   description String? @db.Text()
-  price       Decimal @db.Decimal(10, 2)
-
-  startSellAt  DateTime  @map("start_sell_at") @db.Timestamptz()
-  finishSellAt DateTime? @map("finish_sell_at") @db.Timestamptz()
-
-  discount         Decimal   @db.Decimal(10, 2)
-  startDiscountAt  DateTime? @map("start_discount_at") @db.Timestamptz()
-  finishDiscountAt DateTime? @map("finish_discount_at") @db.Timestamptz()
 
   productOptionGroupList ProductOptionGroup[]
   productImageList       ProductImage[]
   orderProductList       OrderProduct[]
   productCategoryList    ProductCategory[]
   productRestaurantList  ProductRestaurant[]
-  // productOptionItemList  ProductOptionItem[]
+  productOptionItemList  ProductOptionItem[]
 
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId Int
@@ -459,12 +458,12 @@ model ProductOptionItem {
   description String? @db.Text()
   imageUrl    String? @db.Text()
 
-  // product            Product?           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product            Product?            @relation(fields: [productId], references: [id], onDelete: Cascade)
   productOptionGroup ProductOptionGroup? @relation(fields: [productOptionGroupId], references: [id], onDelete: SetNull)
 
   orderProductOptionItemList OrderProductOptionItem[]
 
-  // productId            Int? @map("product_id")
+  productId            Int? @map("product_id")
   productOptionGroupId Int? @map("product_option_group_id")
 
   finishedAt DateTime? @map("finished_at") @db.Timestamptz()
